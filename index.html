@@ -3,119 +3,81 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎸 Slow & Fast Practice - 속도 무제한 연습</title>
+    <title>🎸 Slow & Fast Practice</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap');
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Noto Sans KR', sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-            min-height: 100vh; color: #fff; padding: 20px;
-        }
+        body { font-family: 'Noto Sans KR', sans-serif; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); min-height: 100vh; color: #fff; padding: 20px; }
         .container { max-width: 500px; margin: 0 auto; padding: 20px; }
         .header { text-align: center; margin-bottom: 40px; }
-        .header h1 {
-            font-size: 2.5rem; font-weight: 900; margin-bottom: 10px;
-            background: linear-gradient(90deg, #e94560, #ff6b6b);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-        }
-        .card {
-            background: rgba(255, 255, 255, 0.05); border-radius: 20px;
-            padding: 30px; margin-bottom: 20px; border: 1px solid rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-        }
-        .upload-area {
-            border: 2px dashed rgba(233, 69, 96, 0.5); border-radius: 15px;
-            padding: 40px; text-align: center; cursor: pointer; transition: all 0.3s ease;
-        }
-        .upload-area:hover { border-color: #e94560; background: rgba(233, 69, 96, 0.1); }
+        .header h1 { font-size: 2.5rem; font-weight: 900; background: linear-gradient(90deg, #e94560, #ff6b6b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .card { background: rgba(255, 255, 255, 0.05); border-radius: 20px; padding: 30px; margin-bottom: 20px; border: 1px solid rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); }
+        .upload-area { border: 2px dashed rgba(233, 69, 96, 0.5); border-radius: 15px; padding: 40px; text-align: center; cursor: pointer; }
         #fileInput { display: none; }
         .file-info { display: none; background: rgba(233, 69, 96, 0.2); border-radius: 10px; padding: 15px; margin-top: 20px; text-align: center; }
         .file-info.show { display: block; }
-        .file-name { font-weight: 700; color: #e94560; word-break: break-all; }
         .speed-section, .player-section { display: none; }
         .speed-section.show, .player-section.show { display: block; }
         .bpm-input-container { text-align: center; margin-bottom: 20px; }
-        .bpm-input-container input {
-            background: rgba(255, 255, 255, 0.1); border: 1px solid #e94560;
-            color: #fff; padding: 8px; border-radius: 10px; width: 120px;
-            text-align: center; font-size: 1rem;
-        }
+        .bpm-input-container input { background: rgba(255, 255, 255, 0.1); border: 1px solid #e94560; color: #fff; padding: 8px; border-radius: 10px; width: 120px; text-align: center; }
         .speed-display { text-align: center; margin-bottom: 25px; }
         .speed-value { font-size: 4rem; font-weight: 900; color: #e94560; line-height: 1; }
-        .bpm-result { font-size: 1.2rem; color: #8892b0; margin-top: 5px; }
         .speed-controls { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
-        .speed-btn { width: 50px; height: 50px; border-radius: 50%; border: none; background: rgba(233, 69, 96, 0.3); color: #fff; font-size: 1.5rem; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; }
-        .speed-btn:hover { background: #e94560; transform: scale(1.1); }
         .speed-slider { flex: 1; -webkit-appearance: none; height: 8px; border-radius: 4px; background: rgba(255, 255, 255, 0.1); outline: none; }
         .speed-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 24px; height: 24px; border-radius: 50%; background: #e94560; cursor: pointer; }
         .preset-btns { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
-        .preset-btn { padding: 6px 12px; border-radius: 15px; border: 1px solid rgba(255, 255, 255, 0.2); background: transparent; color: #8892b0; font-size: 0.85rem; cursor: pointer; transition: 0.2s; }
+        .preset-btn { padding: 6px 12px; border-radius: 15px; border: 1px solid rgba(255, 255, 255, 0.2); background: transparent; color: #8892b0; cursor: pointer; }
         .preset-btn.active { border-color: #e94560; color: #e94560; background: rgba(233, 69, 96, 0.1); }
         .play-btn { width: 100%; padding: 20px; border-radius: 15px; border: none; background: linear-gradient(135deg, #e94560, #ff6b6b); color: #fff; font-size: 1.2rem; font-weight: 700; cursor: pointer; margin-bottom: 15px; }
+        .play-btn:disabled { background: #444; cursor: not-allowed; }
         .download-btn { width: 100%; padding: 15px; border-radius: 15px; border: 2px solid #e94560; background: transparent; color: #e94560; font-weight: 700; cursor: pointer; }
         .progress-bar { width: 100%; height: 6px; background: rgba(255, 255, 255, 0.1); border-radius: 3px; margin: 20px 0; overflow: hidden; }
         .progress-fill { height: 100%; background: linear-gradient(90deg, #e94560, #ff6b6b); width: 0%; }
         .time-display { display: flex; justify-content: space-between; font-size: 0.85rem; color: #8892b0; }
-        .status { text-align: center; padding: 10px; color: #8892b0; font-size: 0.9rem; }
+        .status { text-align: center; padding: 10px; color: #ff6b6b; font-weight: bold; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>🎸 Slow & Fast</h1>
-            <p>느린 연습부터 한계 돌파까지</p>
-        </div>
-        
+        <div class="header"><h1>🎸 Slow & Fast</h1><p>연습은 완벽을 만듭니다</p></div>
         <div class="card">
-            <div class="upload-area" id="uploadArea">
-                <div class="upload-icon">🎵</div>
-                <div>음원 파일을 드래그하거나 클릭</div>
-                <input type="file" id="fileInput" accept="audio/*">
-            </div>
-            <div class="file-info" id="fileInfo">
-                <span class="file-name" id="fileName"></span>
-            </div>
+            <div class="upload-area" id="uploadArea">🎵 음원 파일을 클릭하여 업로드</div>
+            <input type="file" id="fileInput" accept="audio/*">
+            <div class="file-info" id="fileInfo">파일: <span id="fileName" class="file-name"></span></div>
         </div>
-        
         <div class="card speed-section" id="speedSection">
-            <div class="bpm-input-container">
-                <input type="number" id="baseBpm" placeholder="원곡 BPM 입력">
-            </div>
+            <div class="bpm-input-container"><input type="number" id="baseBpm" placeholder="원곡 BPM"></div>
             <div class="speed-display">
-                <div class="speed-value"><span id="speedValue">75</span><small style="font-size: 1.5rem">%</small></div>
-                <div class="bpm-result">예상 속도: <strong id="currentBpm">-</strong> BPM</div>
+                <div class="speed-value"><span id="speedValue">100</span>%</div>
+                <div style="color: #8892b0;">예상 속도: <strong id="currentBpm">-</strong> BPM</div>
             </div>
             <div class="speed-controls">
-                <button class="speed-btn" id="speedDown">−</button>
-                <input type="range" class="speed-slider" id="speedSlider" min="50" max="130" value="75">
-                <button class="speed-btn" id="speedUp">+</button>
+                <input type="range" class="speed-slider" id="speedSlider" min="50" max="130" value="100">
             </div>
             <div class="preset-btns">
                 <button class="preset-btn" data-speed="50">50%</button>
                 <button class="preset-btn" data-speed="75">75%</button>
-                <button class="preset-btn" data-speed="100">100%</button>
+                <button class="preset-btn active" data-speed="100">100%</button>
                 <button class="preset-btn" data-speed="110">110%</button>
                 <button class="preset-btn" data-speed="120">120%</button>
                 <button class="preset-btn" data-speed="130">130%</button>
             </div>
         </div>
-        
         <div class="card player-section" id="playerSection">
             <button class="play-btn" id="playBtn" disabled>▶ 재생</button>
             <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
-            <div class="time-display"><span id="currentTime">0:00</span><span id="totalTime">0:00</span></div>
-            <button class="download-btn" id="downloadBtn" disabled>💾 변환된 음원 다운로드</button>
+            <div class="time-display"><span id="currentTime">0:00</span> / <span id="totalTime">0:00</span></div>
+            <button class="download-btn" id="downloadBtn" disabled>💾 다운로드</button>
             <div class="status" id="status"></div>
         </div>
     </div>
-    
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/soundtouch-js/0.1.30/soundtouch.min.js"></script>
     <script>
         let audioContext, originalBuffer, stretchedBuffer, sourceNode;
-        let isPlaying = false, startTime = 0, pauseTime = 0, currentSpeed = 75, animationId;
-        
-        const elements = {
+        let isPlaying = false, startTime = 0, pauseTime = 0, currentSpeed = 100, animationId;
+
+        const el = {
             uploadArea: document.getElementById('uploadArea'),
             fileInput: document.getElementById('fileInput'),
             speedSection: document.getElementById('speedSection'),
@@ -132,56 +94,67 @@
             status: document.getElementById('status')
         };
 
-        function init() { audioContext = new (window.AudioContext || window.webkitAudioContext)(); }
-
-        elements.uploadArea.addEventListener('click', () => elements.fileInput.click());
-        elements.fileInput.addEventListener('change', (e) => e.target.files[0] && handleFile(e.target.files[0]));
-        elements.baseBpm.addEventListener('input', () => updateBpmDisplay());
+        el.uploadArea.onclick = () => el.fileInput.click();
+        el.fileInput.onchange = (e) => e.target.files[0] && handleFile(e.target.files[0]);
+        el.baseBpm.oninput = updateBpm;
 
         async function handleFile(file) {
-            if (!audioContext) init();
+            if (!audioContext) audioContext = new AudioContext();
             document.getElementById('fileName').textContent = file.name;
             document.getElementById('fileInfo').classList.add('show');
-            elements.speedSection.classList.add('show');
-            elements.playerSection.classList.add('show');
-            setStatus('파일 로딩 중...', 'processing');
-            try {
-                const arrayBuffer = await file.arrayBuffer();
-                originalBuffer = await audioContext.decodeAudioData(arrayBuffer);
-                setStatus('');
-                await processAudio();
-            } catch (err) { setStatus('파일 오류', 'error'); }
+            el.speedSection.classList.add('show');
+            el.playerSection.classList.add('show');
+            const arrayBuffer = await file.arrayBuffer();
+            originalBuffer = await audioContext.decodeAudioData(arrayBuffer);
+            await processAudio();
         }
 
         async function processAudio() {
             if (!originalBuffer) return;
-            setStatus('변환 중...', 'processing');
             if (isPlaying) stopAudio();
+            
+            // 시각적 피드백 강화
+            el.playBtn.disabled = true;
+            el.playBtn.innerText = "⏳ 변환 중...";
+            el.status.innerText = "음원을 열공 중입니다! 잠시만 기다려주세요.";
+
             const tempo = currentSpeed / 100;
             stretchedBuffer = await timeStretch(originalBuffer, tempo);
-            elements.totalTimeEl.textContent = formatTime(stretchedBuffer.duration);
-            setStatus('');
-            elements.playBtn.disabled = false;
-            elements.downloadBtn.disabled = false;
-            updateBpmDisplay();
+            
+            // 완료 피드백
+            el.totalTimeEl.textContent = formatTime(stretchedBuffer.duration);
+            el.playBtn.disabled = false;
+            el.playBtn.innerText = "▶ 재생";
+            el.downloadBtn.disabled = false;
+            el.status.innerText = "✅ 변환 완료! 연습을 시작하세요.";
+            updateBpm();
         }
 
-        function updateBpmDisplay() {
-            const base = elements.baseBpm.value;
-            elements.currentBpm.textContent = base ? Math.round(base * (currentSpeed / 100)) : '-';
+        function updateBpm() {
+            const base = el.baseBpm.value;
+            el.currentBpm.textContent = base ? Math.round(base * (currentSpeed / 100)) : '-';
         }
 
         function setSpeed(speed) {
             currentSpeed = speed;
-            elements.speedValue.textContent = speed;
-            elements.speedSlider.value = speed;
-            updateBpmDisplay();
-            document.querySelectorAll('.preset-btn').forEach(btn => {
-                btn.classList.toggle('active', parseInt(btn.dataset.speed) === speed);
-            });
-            if (originalBuffer) processAudio();
+            el.speedValue.textContent = speed;
+            el.speedSlider.value = speed;
+            document.querySelectorAll('.preset-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.speed) === speed));
+            processAudio();
         }
 
+        el.speedSlider.oninput = (e) => {
+            currentSpeed = parseInt(e.target.value);
+            el.speedValue.textContent = currentSpeed;
+            updateBpm();
+        };
+        el.speedSlider.onchange = () => processAudio(); // 슬라이더에서 손을 떼면 변환 시작
+
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.onclick = () => setSpeed(parseInt(btn.dataset.speed));
+        });
+
+        // --- 재생 및 타임스트레치 로직 ---
         function timeStretch(buffer, tempo) {
             return new Promise((resolve) => {
                 const soundTouch = new SoundTouch();
@@ -196,8 +169,7 @@
                         return Math.min(num, input.length - pos);
                     }};
                     const filter = new SimpleFilter(source, soundTouch);
-                    let outPos = 0;
-                    const temp = new Float32Array(4096);
+                    let outPos = 0; const temp = new Float32Array(4096);
                     while (outPos < newLength) {
                         const frames = filter.extract(temp, 4096);
                         if (frames === 0) break;
@@ -209,68 +181,26 @@
             });
         }
 
-        elements.speedSlider.addEventListener('input', (e) => setSpeed(parseInt(e.target.value)));
-        document.getElementById('speedDown').addEventListener('click', () => currentSpeed > 50 && setSpeed(currentSpeed - 1));
-        document.getElementById('speedUp').addEventListener('click', () => currentSpeed < 130 && setSpeed(currentSpeed + 1));
-        document.querySelectorAll('.preset-btn').forEach(btn => btn.addEventListener('click', () => setSpeed(parseInt(btn.dataset.speed))));
-
-        elements.playBtn.addEventListener('click', () => isPlaying ? pauseAudio() : playAudio());
+        el.playBtn.onclick = () => isPlaying ? pauseAudio() : playAudio();
         function playAudio() {
-            if (audioContext.state === 'suspended') audioContext.resume();
             sourceNode = audioContext.createBufferSource();
             sourceNode.buffer = stretchedBuffer;
             sourceNode.connect(audioContext.destination);
             sourceNode.onended = () => isPlaying && stopAudio();
             startTime = audioContext.currentTime - pauseTime;
             sourceNode.start(0, pauseTime);
-            isPlaying = true;
-            elements.playBtn.textContent = '⏸ 정지';
-            updateProgress();
+            isPlaying = true; el.playBtn.innerText = "⏸ 정지"; updateProgress();
         }
-        function pauseAudio() { sourceNode?.stop(); pauseTime = audioContext.currentTime - startTime; isPlaying = false; elements.playBtn.textContent = '▶ 재생'; cancelAnimationFrame(animationId); }
-        function stopAudio() { sourceNode?.stop(); pauseTime = 0; isPlaying = false; elements.playBtn.textContent = '▶ 재생'; elements.progressFill.style.width = '0%'; cancelAnimationFrame(animationId); }
+        function pauseAudio() { sourceNode?.stop(); pauseTime = audioContext.currentTime - startTime; isPlaying = false; el.playBtn.innerText = "▶ 재생"; cancelAnimationFrame(animationId); }
+        function stopAudio() { sourceNode?.stop(); pauseTime = 0; isPlaying = false; el.playBtn.innerText = "▶ 재생"; el.progressFill.style.width = '0%'; }
         function updateProgress() {
             if (!isPlaying) return;
             const elapsed = audioContext.currentTime - startTime;
-            const progress = (elapsed / stretchedBuffer.duration) * 100;
-            elements.progressFill.style.width = Math.min(progress, 100) + '%';
-            elements.currentTimeEl.textContent = formatTime(elapsed);
+            el.progressFill.style.width = (elapsed / stretchedBuffer.duration * 100) + '%';
+            el.currentTimeEl.textContent = formatTime(elapsed);
             if (elapsed < stretchedBuffer.duration) animationId = requestAnimationFrame(updateProgress);
         }
         function formatTime(s) { return `${Math.floor(s/60)}:${Math.floor(s%60).toString().padStart(2, '0')}`; }
-        function setStatus(txt, type) { elements.status.textContent = txt; elements.status.className = 'status ' + type; }
-        
-        elements.downloadBtn.addEventListener('click', async () => {
-            setStatus('WAV 생성 중...', 'processing');
-            const wavBlob = await bufferToWav(stretchedBuffer);
-            const url = URL.createObjectURL(wavBlob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `practice_${currentSpeed}pct.wav`;
-            a.click();
-            setStatus('다운로드 완료!');
-        });
-
-        function bufferToWav(buffer) {
-            const numCh = buffer.numberOfChannels, sampleRate = buffer.sampleRate;
-            const dataLen = buffer.length * numCh * 2, bufLen = 44 + dataLen;
-            const arrayBuf = new ArrayBuffer(bufLen), view = new DataView(arrayBuf);
-            const writeStr = (off, s) => { for(let i=0; i<s.length; i++) view.setUint8(off+i, s.charCodeAt(i)); };
-            writeStr(0, 'RIFF'); view.setUint32(4, 36 + dataLen, true); writeStr(8, 'WAVE');
-            writeStr(12, 'fmt '); view.setUint32(16, 16, true); view.setUint16(20, 1, true);
-            view.setUint16(22, numCh, true); view.setUint32(24, sampleRate, true);
-            view.setUint32(28, sampleRate * numCh * 2, true); view.setUint16(32, numCh * 2, true);
-            view.setUint16(34, 16, true); writeStr(36, 'data'); view.setUint32(40, dataLen, true);
-            let off = 44;
-            for(let i=0; i<buffer.length; i++) {
-                for(let ch=0; ch<numCh; ch++) {
-                    let s = Math.max(-1, Math.min(1, buffer.getChannelData(ch)[i]));
-                    view.setInt16(off, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
-                    off += 2;
-                }
-            }
-            return new Blob([arrayBuf], { type: 'audio/wav' });
-        }
     </script>
 </body>
 </html>
