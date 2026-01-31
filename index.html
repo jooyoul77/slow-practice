@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎸 BPM Master - 독립 실행형</title>
+    <title>🎸 BPM Master - 50~130% 고속 모드</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap');
         body { font-family: 'Noto Sans KR', sans-serif; background: #1a1a2e; color: #fff; text-align: center; padding: 20px; margin: 0; }
@@ -16,22 +16,23 @@
         input[type="number"] { background: none; border: none; border-bottom: 2px solid #e94560; color: #fff; width: 80px; text-align: center; font-size: 2rem; font-weight: 900; outline: none; }
         
         .speed-slider { width: 100%; height: 8px; border-radius: 5px; background: #333; outline: none; margin: 25px 0; -webkit-appearance: none; cursor: pointer; }
-        .speed-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 24px; height: 24px; background: #e94560; border-radius: 50%; border: 3px solid #fff; }
+        .speed-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 24px; height: 24px; background: #e94560; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 0 10px rgba(233,69,96,0.5); }
         
-        .play-btn { width: 100%; padding: 18px; border-radius: 12px; border: none; background: linear-gradient(135deg, #e94560, #950740); color: #fff; font-size: 1.2rem; font-weight: bold; cursor: pointer; }
+        .play-btn { width: 100%; padding: 18px; border-radius: 12px; border: none; background: linear-gradient(135deg, #e94560, #950740); color: #fff; font-size: 1.2rem; font-weight: bold; cursor: pointer; transition: 0.3s; }
         .play-btn:disabled { background: #444; opacity: 0.5; cursor: not-allowed; }
         
-        #status { margin-top: 20px; color: #ff6b6b; font-size: 0.9rem; }
+        #status { margin-top: 20px; color: #ff6b6b; font-size: 0.9rem; font-weight: 500; min-height: 1.5em; }
     </style>
 </head>
 <body>
     <div class="card">
         <h1>🎸 BPM Master</h1>
+        
         <input type="file" id="audioFile" accept="audio/*">
 
         <div class="bpm-display">
             <div class="bpm-box">
-                <div class="bpm-label">원곡 BPM</div>
+                <div class="bpm-label">원곡 BPM (분석)</div>
                 <input type="number" id="baseBpm" value="120">
             </div>
             <div style="font-size: 1.5rem; color: #444;">▶</div>
@@ -42,20 +43,17 @@
         </div>
 
         <div style="margin:10px 0;">재생 속도: <span id="speedVal" style="color:#e94560; font-weight:bold;">100</span>%</div>
-        <input type="range" id="speedSlider" class="speed-slider" min="50" max="150" value="100">
+        <input type="range" id="speedSlider" class="speed-slider" min="50" max="130" value="100">
 
         <button id="playBtn" class="play-btn" disabled>파일을 선택해 주세요</button>
         <div id="status">연습할 곡을 올려보세요!</div>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/soundtouch-js/0.1.30/soundtouch.min.js"></script>
+
     <script>
-        /* SoundTouch.js Library (Embedded) */
-        !function(t,n){"object"==typeof exports&&"undefined"!=typeof module?n(exports):"function"==typeof define&&define.amd?define(["exports"],n):n((t=t||self).SoundTouch={})}(this,function(t){"use strict";function n(){this.rate=1,this.tempo=1,this.pitch=1,this.inputBuffer=new e,this.outputBuffer=new e,this.onstatusBufferFull=function(){},this.onstatusBufferEmpty=function(){}}var e=function(){this.clear()};e.prototype.clear=function(){this.samples=new Float32Array(0),this.startIndex=0,this.endIndex=0},e.prototype.putSamples=function(t,n,e){var i=this.endIndex+e;i>this.samples.length&&(this.samples=function(t,n){var e=new Float32Array(n);return e.set(t),e}(this.samples,Math.max(2*this.samples.length,i))),this.samples.set(t.subarray(n,n+e),this.endIndex),this.endIndex=i},e.prototype.receiveSamples=function(t,n){var e=Math.min(n,this.frameCount);t.set(this.samples.subarray(this.startIndex,this.startIndex+e)),this.startIndex+=e,this.startIndex===this.endIndex&&this.clear()},Object.defineProperty(e.prototype,"frameCount",{get:function(){return this.endIndex-this.startIndex}});var i=function(t,n){this.source=t,this.soundTouch=n,this.position=0};i.prototype.extract=function(t,n){var e=this.soundTouch.outputBuffer;for(this.soundTouch.process();e.frameCount<n;){var i=Math.min(4096,1e6);if(0===(i=this.source.extract(this.soundTouch.inputBuffer.samples,i,this.position)))break;this.soundTouch.inputBuffer.putSamples(this.soundTouch.inputBuffer.samples,0,i),this.position+=i,this.soundTouch.process()}return e.receiveSamples(t,n),Math.min(n,t.length)};
-        
-        /* 메인 로직 시작 */
-        window.SoundTouch = n; window.SimpleFilter = i; // 글로벌 등록
-        
         let audioCtx, origBuf, stretchBuf, source, isPlaying = false, speed = 1.0;
+
         const el = {
             file: document.getElementById('audioFile'),
             baseBpm: document.getElementById('baseBpm'),
@@ -66,52 +64,66 @@
             status: document.getElementById('status')
         };
 
+        // 파일 선택 시 자동 분석 및 초기 변환
         el.file.onchange = async (e) => {
+            if(!window.SoundTouch) {
+                el.status.innerText = "❌ 엔진 로드 실패. 인터넷 연결을 확인하세요.";
+                return;
+            }
             if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            el.status.innerText = "🔍 분석 중...";
+            
+            el.status.innerText = "🔍 음원을 분석하고 있습니다...";
+            el.playBtn.disabled = true;
+
             const ab = await e.target.files[0].arrayBuffer();
             origBuf = await audioCtx.decodeAudioData(ab);
+
+            // 간단한 BPM 분석 로직
             const analyzedBpm = detectBPM(origBuf);
             el.baseBpm.value = analyzedBpm;
             updateDisplay();
-            process();
+            process(); 
         };
 
         function detectBPM(buffer) {
             const data = buffer.getChannelData(0);
-            const step = 1000, peaks = [];
+            const step = 2000, peaks = [];
             for (let i = 0; i < data.length; i += step) {
                 let max = 0;
                 for (let j = 0; j < step && i + j < data.length; j++) {
                     let vol = Math.abs(data[i + j]); if (vol > max) max = vol;
                 }
-                if (max > 0.3) peaks.push(i);
+                if (max > 0.4) peaks.push(i);
             }
             if (peaks.length < 2) return 120;
             let intervals = [];
             for (let i = 1; i < peaks.length; i++) intervals.push(peaks[i] - peaks[i-1]);
             const avgInterval = intervals.reduce((a, b) => a + b) / intervals.length;
             let bpm = Math.round(60 / (avgInterval / buffer.sampleRate));
-            while (bpm < 70) bpm *= 2; while (bpm > 170) bpm /= 2;
+            while (bpm < 75) bpm *= 2; while (bpm > 160) bpm /= 2;
             return bpm;
         }
 
         function updateDisplay() {
             speed = el.slider.value / 100;
             el.speedTxt.innerText = el.slider.value;
-            el.targetBpm.innerText = Math.round(el.baseBpm.value * speed);
+            const base = parseFloat(el.baseBpm.value) || 120;
+            el.targetBpm.innerText = Math.round(base * speed);
         }
 
         el.slider.oninput = updateDisplay;
-        el.slider.onchange = process;
+        el.slider.onchange = process; // 슬라이더 멈췄을 때만 정밀 변환 실행
         el.baseBpm.oninput = updateDisplay;
 
+        // SoundTouch를 이용한 고퀄리티 변환
         async function process() {
             if(!origBuf) return;
             el.playBtn.disabled = true;
-            el.status.innerText = "⏳ 고속 변환 중...";
-            await new Promise(r => setTimeout(r, 50));
+            el.status.innerText = `⏳ ${el.slider.value}% 속도로 변환 중...`;
+            
+            await new Promise(r => setTimeout(r, 100));
             stretchBuf = await timeStretch(origBuf, speed);
+            
             el.playBtn.disabled = false;
             el.playBtn.innerText = "▶ 재생 시작";
             el.status.innerText = "✅ 연습 준비 완료!";
@@ -119,10 +131,11 @@
 
         function timeStretch(buf, tempo) {
             return new Promise((resolve) => {
-                const st = new window.SoundTouch();
-                st.tempo = tempo;
+                const st = new SoundTouch();
+                st.tempo = tempo; // 속도(Tempo) 조절 파라미터
                 const outLen = Math.round(buf.length / tempo);
                 const outBuf = audioCtx.createBuffer(buf.numberOfChannels, outLen, buf.sampleRate);
+                
                 for (let ch = 0; ch < buf.numberOfChannels; ch++) {
                     const input = buf.getChannelData(ch);
                     const output = outBuf.getChannelData(ch);
@@ -130,7 +143,7 @@
                         for(let i=0; i<num && (pos+i)<input.length; i++) target[i] = input[pos+i];
                         return Math.min(num, input.length - pos);
                     }};
-                    const filter = new window.SimpleFilter(src, st);
+                    const filter = new SimpleFilter(src, st);
                     let outPos = 0; const tmp = new Float32Array(4096);
                     while (outPos < outLen) {
                         const f = filter.extract(tmp, 4096);
@@ -144,12 +157,17 @@
         }
 
         el.playBtn.onclick = () => {
-            if(isPlaying) { source.stop(); isPlaying = false; el.playBtn.innerText = "▶ 재생 시작"; }
-            else {
+            if(isPlaying) {
+                source.stop();
+                isPlaying = false;
+                el.playBtn.innerText = "▶ 재생 시작";
+            } else {
                 source = audioCtx.createBufferSource();
                 source.buffer = stretchBuf;
                 source.connect(audioCtx.destination);
-                source.start(); isPlaying = true; el.playBtn.innerText = "⏸ 정지";
+                source.start();
+                isPlaying = true;
+                el.playBtn.innerText = "⏸ 정지";
                 source.onended = () => { isPlaying = false; el.playBtn.innerText = "▶ 재생 시작"; };
             }
         };
