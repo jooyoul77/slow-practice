@@ -2,215 +2,179 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>🎸 Slow Practice Pro - Precision Scroll</title>
+  <title>🎸 Slow Practice Pro - Universal Engine</title>
   <style>
     :root { --primary: #3498db; --success: #2ecc71; --dark: #2c3e50; --bg: #f5f7fa; }
     body { font-family: 'Pretendard', sans-serif; background: var(--bg); display: flex; justify-content: center; padding: 20px; }
-    .card { background: white; width: 100%; max-width: 600px; padding: 35px; border-radius: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.05); }
+    .card { background: white; width: 100%; max-width: 550px; padding: 35px; border-radius: 25px; box-shadow: 0 20px 50px rgba(0,0,0,0.05); text-align: center; }
     
-    /* 분석 결과 디스플레이 */
-    .analysis-header { background: var(--dark); color: white; padding: 25px; border-radius: 18px; margin-bottom: 25px; position: relative; }
-    .bpm-label { font-size: 13px; opacity: 0.8; text-transform: uppercase; letter-spacing: 1px; }
-    .bpm-value { font-size: 3.5rem; font-weight: 800; display: block; margin: 5px 0; }
+    /* BPM 표시 모니터 */
+    .bpm-monitor { background: var(--dark); color: white; padding: 25px; border-radius: 20px; margin-bottom: 25px; }
+    .bpm-value { font-size: 3.5rem; font-weight: 800; color: var(--success); line-height: 1; }
+    .bpm-label { font-size: 12px; opacity: 0.6; letter-spacing: 1px; margin-bottom: 5px; display: block; }
     
-    /* 스크롤/슬라이더 영역 */
-    .control-section { text-align: left; padding: 10px 5px; }
-    .slider-info { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 10px; font-size: 15px; }
-    
-    input[type=range] { 
-      width: 100%; height: 12px; background: #e0e6ed; border-radius: 6px; 
-      outline: none; -webkit-appearance: none; margin: 20px 0; 
-    }
-    input[type=range]::-webkit-slider-thumb { 
-      -webkit-appearance: none; width: 28px; height: 28px; background: var(--primary); 
-      border-radius: 50%; cursor: pointer; border: 4px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    }
+    /* 장르 선택 칩 */
+    .chip-group { display: flex; gap: 8px; justify-content: center; margin-bottom: 20px; }
+    .chip { padding: 8px 15px; border-radius: 20px; border: 1px solid #ddd; background: #fff; font-size: 12px; cursor: pointer; transition: 0.2s; }
+    .chip.active { background: var(--primary); color: white; border-color: var(--primary); }
 
-    .result-preview { 
-      background: #f8f9fa; border: 1px solid #edf2f7; padding: 15px; 
-      border-radius: 12px; display: flex; justify-content: space-around; margin-top: 10px;
-    }
-    .res-item span { display: block; font-size: 11px; color: #718096; }
-    .res-item strong { font-size: 1.2rem; color: var(--dark); }
-
-    #debugConsole { 
-      background: #1a1a1a; color: #4ade80; padding: 15px; font-family: monospace; 
-      font-size: 11px; height: 100px; overflow-y: auto; border-radius: 10px; margin-top: 25px;
-    }
+    /* 슬라이더 컨트롤 */
+    .scroll-area { background: #fdfdfd; border: 1px solid #edf2f7; padding: 20px; border-radius: 18px; text-align: left; }
+    .info-row { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 5px; }
     
-    button { 
-      width: 100%; padding: 18px; background: var(--primary); color: white; border: none; 
-      border-radius: 14px; font-weight: bold; font-size: 17px; cursor: pointer; transition: 0.2s;
-    }
-    button:hover { background: #2980b9; transform: translateY(-2px); }
-    .download-btn { 
-      display: none; margin-top: 20px; background: var(--success); text-align: center; 
-      text-decoration: none; padding: 18px; color: white; border-radius: 14px; font-weight: bold;
-    }
+    input[type=range] { width: 100%; height: 8px; border-radius: 4px; background: #e2e8f0; outline: none; -webkit-appearance: none; margin: 20px 0; }
+    input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 26px; height: 26px; background: var(--primary); border-radius: 50%; cursor: pointer; border: 4px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+
+    .target-box { background: #ebf5ff; padding: 15px; border-radius: 12px; display: flex; justify-content: space-around; align-items: center; }
+    .target-item { text-align: center; }
+    .target-item span { display: block; font-size: 11px; color: #4a5568; }
+    .target-item strong { font-size: 1.2rem; color: var(--primary); }
+
+    button#convertBtn { width: 100%; padding: 18px; background: var(--dark); color: white; border: none; border-radius: 15px; font-weight: bold; font-size: 16px; cursor: pointer; margin-top: 25px; transition: 0.3s; }
+    button#convertBtn:hover { background: #000; }
+    
+    #log { font-family: monospace; font-size: 11px; color: #718096; margin-top: 15px; height: 50px; overflow-y: auto; }
+    .download-link { display: none; margin-top: 15px; background: var(--success); color: white; text-decoration: none; padding: 15px; border-radius: 15px; font-weight: bold; }
   </style>
 </head>
 <body>
 
 <div class="card">
-  <div class="analysis-header">
-    <span class="bpm-label">Detected Original Tempo</span>
-    <strong id="origBpmDisplay" class="bpm-value">-</strong>
-    <div style="display: flex; gap: 8px;">
-        <button onclick="manualCorrect(0.5)" style="padding: 5px 10px; font-size: 12px; width: auto; background: rgba(255,255,255,0.2);">½</button>
-        <button onclick="manualCorrect(2)" style="padding: 5px 10px; font-size: 12px; width: auto; background: rgba(255,255,255,0.2);">x2</button>
+  <div class="bpm-monitor">
+    <span class="bpm-label">ANALYZED ORIGINAL BPM</span>
+    <div id="bpmDisplay" class="bpm-value">0.0</div>
+    <div class="chip-group" style="margin-top: 15px;">
+        <button class="chip" onclick="correctBpm(0.5)">½ 배속</button>
+        <button class="chip" onclick="correctBpm(2)">2배속</button>
+        <button class="chip active" onclick="resetBpm()">재분석</button>
     </div>
   </div>
 
-  <input type="file" id="fileInput" accept="audio/*" style="margin-bottom: 25px; width: 100%;">
+  <input type="file" id="fileIn" accept="audio/*" style="width: 100%; margin-bottom: 25px;">
 
-  <div class="control-section">
-    <div class="slider-info">
-      <span>연습 속도 조절</span>
-      <span style="color: var(--primary);"><span id="speedPercent">100</span>%</span>
+  <div class="scroll-area">
+    <div class="info-row">
+      <span>연습 배속 설정 (Scroll)</span>
+      <span id="rateLabel" style="color: var(--primary);">100%</span>
     </div>
-    <input type="range" id="speedSlider" min="50" max="150" value="100" step="1">
+    <input type="range" id="rateSlider" min="50" max="150" value="100" step="1">
     
-    <div class="result-preview">
-      <div class="res-item">
-        <span>현재 배속</span>
-        <strong id="finalRate">1.0x</strong>
+    <div class="target-box">
+      <div class="target-item">
+        <span>최종 연습 속도</span>
+        <strong id="finalBpm">- BPM</strong>
       </div>
-      <div class="res-item">
-        <span>변환 후 예상 BPM</span>
-        <strong id="finalBpm" style="color: var(--primary);">-</strong>
+      <div style="font-size: 20px; color: #cbd5e0;">|</div>
+      <div class="target-item">
+        <span>재생 배속</span>
+        <strong id="finalRate">1.00x</strong>
       </div>
     </div>
   </div>
 
-  <button id="convertBtn" style="margin-top: 25px;">고음질 변환 및 다운로드</button>
-  <a id="dlLink" class="download-btn">⬇ 파일 다운로드 하기</a>
+  <button id="convertBtn">MP3 변환 및 다운로드</button>
+  <a id="dl" class="download-link">⬇ 변환된 파일 저장</a>
 
-  <div id="debugConsole">Ready to analyze...</div>
+  <div id="log">음원 파일을 올려주세요.</div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.0/lame.min.js"></script>
 <script>
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-const speedSlider = document.getElementById('speedSlider');
-let originalBpm = 0;
+const ctx = new (window.AudioContext || window.webkitAudioContext)();
+let baseBpm = 0;
 
-function logger(msg) {
-  const consoleEl = document.getElementById('debugConsole');
-  consoleEl.innerHTML += `> ${msg}<br>`;
-  consoleEl.scrollTop = consoleEl.scrollHeight;
-}
+function logger(m) { document.getElementById('log').innerText = `> ${m}`; }
 
-// 1. 고정밀 BPM 분석 (Autocorrelation 강화)
-async function analyzeBpm(buffer) {
-  const offlineCtx = new OfflineAudioContext(1, buffer.length, buffer.sampleRate);
-  const source = offlineCtx.createBufferSource();
-  source.buffer = buffer;
-  
-  const filter = offlineCtx.createBiquadFilter();
-  filter.type = 'lowpass';
-  filter.frequency.value = 140; // 베이스 주파수 집중
-
-  source.connect(filter);
-  filter.connect(offlineCtx.destination);
-  source.start(0);
-
-  const filtered = await offlineCtx.startRendering();
-  const data = filtered.getChannelData(0);
-
-  // Peak 검출 알고리즘
-  let peaks = [];
-  const threshold = 0.25;
-  for (let i = 0; i < data.length; i += 1000) {
-    if (Math.abs(data[i]) > threshold) {
-      peaks.push(i);
-      i += buffer.sampleRate * 0.35; // 박자 중복 방지 (최대 170BPM 제한)
+// 1. 고정밀 오픈소스 분석 로직 (에너지 기반)
+async function analyze(buffer) {
+    const data = buffer.getChannelData(0);
+    const sampleRate = buffer.sampleRate;
+    const win = 2048;
+    const energy = [];
+    
+    for (let i = 0; i < data.length; i += win) {
+        let sum = 0;
+        for (let j = 0; j < win && i+j < data.length; j++) sum += data[i+j] * data[i+j];
+        energy.push(Math.sqrt(sum/win));
     }
-  }
 
-  const intervals = [];
-  for (let i = 1; i < peaks.length; i++) intervals.push(peaks[i] - peaks[i-1]);
-  const median = intervals.sort((a,b)=>a-b)[Math.floor(intervals.length/2)];
-  let bpm = (60 * buffer.sampleRate) / median;
-  
-  // 가요/발라드 범위(60~130)로 보정
-  while(bpm > 130) bpm /= 2;
-  while(bpm < 60) bpm *= 2;
-  return bpm;
+    let best = 0, max = -1;
+    for (let bpm = 60; bpm <= 170; bpm += 0.2) {
+        const interval = Math.round((60/bpm) * (sampleRate/win));
+        let conf = 0;
+        for (let i = 0; i < energy.length - interval; i++) conf += energy[i] * energy[i+interval];
+        
+        // 가요 일반 범위(70~120) 가중치
+        let w = (bpm > 70 && bpm < 120) ? 1.1 : 1.0;
+        if (conf * w > max) { max = conf * w; best = bpm; }
+    }
+    return best;
 }
 
-function manualCorrect(factor) {
-  originalBpm *= factor;
-  updateUI();
-  logger(`수동 보정 완료: ${originalBpm.toFixed(1)} BPM`);
+function update() {
+    const r = document.getElementById('rateSlider').value;
+    document.getElementById('rateLabel').innerText = r + '%';
+    document.getElementById('bpmDisplay').innerText = baseBpm.toFixed(1);
+    document.getElementById('finalBpm').innerText = (baseBpm * (r/100)).toFixed(1) + ' BPM';
+    document.getElementById('finalRate').innerText = (r/100).toFixed(2) + 'x';
 }
 
-function updateUI() {
-  const rate = speedSlider.value / 100;
-  document.getElementById('speedPercent').textContent = speedSlider.value;
-  document.getElementById('origBpmDisplay').textContent = originalBpm.toFixed(1);
-  document.getElementById('finalRate').textContent = rate.toFixed(2) + 'x';
-  document.getElementById('finalBpm').textContent = (originalBpm * rate).toFixed(1);
-}
+function correctBpm(f) { baseBpm *= f; update(); }
 
-speedSlider.oninput = updateUI;
-
-document.getElementById('fileInput').onchange = async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-  logger(`파일 디코딩 중: ${file.name}`);
-  const arrayBuffer = await file.arrayBuffer();
-  const buffer = await audioCtx.decodeAudioData(arrayBuffer);
-  originalBpm = await analyzeBpm(buffer);
-  updateUI();
-  logger(`분석 완료: ${originalBpm.toFixed(1)} BPM`);
+document.getElementById('fileIn').onchange = async (e) => {
+    const f = e.target.files[0];
+    if(!f) return;
+    logger("음원 분석 중... 잠시만 기다려주세요.");
+    const buf = await ctx.decodeAudioData(await f.arrayBuffer());
+    baseBpm = await analyze(buf);
+    update();
+    logger("분석 완료. 스크롤을 조절해 보세요.");
 };
 
+document.getElementById('rateSlider').oninput = update;
+
+// 2. 변환 및 MP3 출력 로직
 document.getElementById('convertBtn').onclick = async () => {
-  const file = document.getElementById('fileInput').files[0];
-  if (!file) return;
-  
-  const rate = speedSlider.value / 100;
-  logger(`변환 프로세스 시작 (${speedSlider.value}%)...`);
-  
-  const arrayBuffer = await file.arrayBuffer();
-  const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-  
-  const offlineCtx = new OfflineAudioContext(audioBuffer.numberOfChannels, audioBuffer.length / rate, audioBuffer.sampleRate);
-  const source = offlineCtx.createBufferSource();
-  source.buffer = audioBuffer;
-  source.playbackRate.value = rate;
-  if ('preservesPitch' in source) source.preservesPitch = true;
-  
-  source.connect(offlineCtx.destination);
-  source.start();
-  
-  const rendered = await offlineCtx.startRendering();
-  logger("MP3 인코딩 중...");
-  
-  // MP3 Encoding 로직 (lamejs)
-  const encoder = new lamejs.Mp3Encoder(rendered.numberOfChannels, rendered.sampleRate, 128);
-  const mp3Data = [];
-  const left = rendered.getChannelData(0);
-  const right = rendered.numberOfChannels > 1 ? rendered.getChannelData(1) : left;
-  
-  for (let i = 0; i < left.length; i += 1152) {
-    const l = new Int16Array(1152);
-    const r = new Int16Array(1152);
-    for (let j = 0; j < 1152; j++) {
-      l[j] = left[i+j] * 0x7FFF;
-      r[j] = right[i+j] * 0x7FFF;
+    const f = document.getElementById('fileIn').files[0];
+    if(!f || baseBpm === 0) return alert("파일을 먼저 분석해주세요.");
+    
+    const rate = document.getElementById('rateSlider').value / 100;
+    logger(`${(rate*100).toFixed(0)}% 배속으로 인코딩 중...`);
+    
+    const buf = await ctx.decodeAudioData(await f.arrayBuffer());
+    const offCtx = new OfflineAudioContext(buf.numberOfChannels, buf.length/rate, buf.sampleRate);
+    const src = offCtx.createBufferSource();
+    src.buffer = buf;
+    src.playbackRate.value = rate;
+    if('preservesPitch' in src) src.preservesPitch = true;
+    src.connect(offCtx.destination);
+    src.start();
+
+    const rendered = await offCtx.startRendering();
+    
+    // MP3 인코딩 (lamejs)
+    const enc = new lamejs.Mp3Encoder(rendered.numberOfChannels, rendered.sampleRate, 128);
+    const mp3 = [];
+    const l = rendered.getChannelData(0);
+    const r = rendered.numberOfChannels > 1 ? rendered.getChannelData(1) : l;
+    
+    for (let i = 0; i < l.length; i += 1152) {
+        const lb = new Int16Array(1152), rb = new Int16Array(1152);
+        for (let j = 0; j < 1152; j++) {
+            lb[j] = l[i+j] * 0x7FFF;
+            rb[j] = r[i+j] * 0x7FFF;
+        }
+        const b = enc.encodeBuffer(lb, rb);
+        if (b.length > 0) mp3.push(b);
     }
-    const buf = encoder.encodeBuffer(l, r);
-    if (buf.length > 0) mp3Data.push(buf);
-  }
-  mp3Data.push(encoder.flush());
-  
-  const blob = new Blob(mp3Data, { type: 'audio/mp3' });
-  const dl = document.getElementById('dlLink');
-  dl.href = URL.createObjectURL(blob);
-  dl.download = `Slowed_${speedSlider.value}%_${file.name}`;
-  dl.style.display = 'block';
-  logger("모든 작업 완료!");
+    mp3.push(enc.flush());
+    
+    const blob = new Blob(mp3, { type: 'audio/mp3' });
+    const link = document.getElementById('dl');
+    link.href = URL.createObjectURL(blob);
+    link.download = `Slowed_${Math.round(baseBpm*(rate))}_${f.name}`;
+    link.style.display = 'block';
+    logger("변환 완료! 아래 다운로드 버튼을 누르세요.");
 };
 </script>
 </body>
