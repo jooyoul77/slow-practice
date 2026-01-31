@@ -5,133 +5,187 @@
   <title>🎸 Slow Practice</title>
   <style>
     body {
-      font-family: sans-serif;
-      max-width: 420px;
-      margin: 40px auto;
+      font-family: Arial, sans-serif;
+      background: #fafafa;
       text-align: center;
+      padding: 40px;
     }
-    button, select {
+    h1 {
+      margin-bottom: 20px;
+    }
+    input, select, button {
+      margin: 10px;
+      padding: 8px;
       font-size: 16px;
-      margin-top: 12px;
-      padding: 6px 12px;
+    }
+    #status {
+      margin-top: 20px;
+      font-weight: bold;
+    }
+    #downloadLink {
+      display: none;
+      margin-top: 20px;
+      font-size: 18px;
+      color: #0066cc;
+      text-decoration: none;
     }
   </style>
 </head>
 <body>
 
-  <h2>🎸 Slow Practice</h2>
+  <h1>🎸 Slow Practice</h1>
 
-  <input type="file" id="fileInput" accept="audio/*"><br>
+  <input type="file" id="fileInput" accept="audio/*" /><br/>
 
-  <label>
-    속도:
-    <select id="speed">
-      <option value="0.5">50%</option>
-      <option value="0.6">60%</option>
-      <option value="0.7">70%</option>
-      <option value="0.8">80%</option>
-      <option value="0.9">90%</option>
-      <option value="1.0" selected>100%</option>
-    </select>
-  </label><br>
+  속도:
+  <select id="speedSelect">
+    <option value="0.5">50%</option>
+    <option value="0.6">60%</option>
+    <option value="0.7" selected>70%</option>
+    <option value="0.8">80%</option>
+    <option value="0.9">90%</option>
+    <option value="1.0">100%</option>
+  </select><br/>
 
-  <button id="processBtn">변환 후 재생 ▶</button>
+  <button id="convertBtn">▶ 변환 후 다운로드</button>
 
-  <p style="font-size: 13px; color: #666;">
+  <p id="status">대기 중</p>
+  <a id="downloadLink">⬇ 변환된 파일 다운로드</a>
+
+  <p style="font-size:13px; color:#666;">
     ※ 유튜브 영상은 mp3로 변환 후 업로드하세요
   </p>
 
-  <script src="https://unpkg.com/soundtouchjs/dist/soundtouch.js"></script>
-  <script>
-    const fileInput = document.getElementById('fileInput');
-    const speedSelect = document.getElementById('speed');
-    const processBtn = document.getElementById('processBtn');
+<script src="https://cdn.jsdelivr.net/npm/soundtouchjs@0.1.30/dist/soundtouch.min.js"></script>
+<script>
+const fileInput = document.getElementById('fileInput');
+const speedSelect = document.getElementById('speedSelect');
+const convertBtn = document.getElementById('convertBtn');
+const statusEl = document.getElementById('status');
+const downloadLink = document.getElementById('downloadLink');
 
-    let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    let sourceBuffer = null;
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-    fileInput.onchange = async () => {
-      const file = fileInput.files[0];
-      if (!file) return;
+convertBtn.onclick = async () => {
+  const file = fileInput.files[0];
+  if (!file) {
+    alert('오디오 파일을 선택하세요');
+    return;
+  }
 
-      const arrayBuffer = await file.arrayBuffer();
-      sourceBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-      alert('음원 로드 완료');
-    };
+  statusEl.textContent = '오디오 로딩 중...';
+  downloadLink.style.display = 'none';
 
-    processBtn.onclick = async () => {
-      if (!sourceBuffer) {
-        alert('음원을 먼저 업로드하세요');
-        return;
-      }
+  const arrayBuffer = await file.arrayBuffer();
+  const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
 
-      if (audioCtx.state === 'suspended') {
-        await audioCtx.resume();
-      }
+  statusEl.textContent = '속도 변환 중... (잠시만 기다리세요)';
 
-      const speed = parseFloat(speedSelect.value);
-      const channels = sourceBuffer.numberOfChannels;
-      const length = sourceBuffer.length;
-      const sampleRate = sourceBuffer.sampleRate;
+  const rate = parseFloat(speedSelect.value);
+  const processedBuffer = await processAudio(audioBuffer, rate);
 
-      const left = sourceBuffer.getChannelData(0);
-      const right = channels > 1
-        ? sourceBuffer.getChannelData(1)
-        : left;
+  statusEl.textContent = '변환 완료 ✅';
 
-      const st = new soundtouch.SoundTouch(sampleRate);
-      st.tempo = speed;
+  const wavData = audioBufferToWav(processedBuffer);
+  const blob = new Blob([wavData], { type: 'audio/wav' });
+  const url = URL.createObjectURL(blob);
 
-      const source = {
-        extract: function (target, numFrames, position) {
-          for (let i = 0; i < numFrames; i++) {
-            target[i * 2]     = left[position + i] || 0;
-            target[i * 2 + 1] = right[position + i] || 0;
+  downloadLink.href = url;
+  downloadLink.download = 'slow-practice.wav';
+  downloadLink.style.display = 'inline';
+};
+
+// ----------------------------
+// SoundTouch 처리
+// ----------------------------
+function processAudio(buffer, rate) {
+  return new Promise(resolve => {
+    const channels = buffer.numberOfChannels;
+    const length = buffer.length;
+    const source = new soundtouch.SoundTouch(buffer.sampleRate);
+    source.tempo = rate;
+
+    const samples = [];
+    for (let ch = 0; ch < channels; ch++) {
+      samples.push(buffer.getChannelData(ch));
+    }
+
+    const sourceNode = new soundtouch.SimpleFilter({
+      extract: (target, numFrames) => {
+        for (let i = 0; i < numFrames; i++) {
+          for (let ch = 0; ch < channels; ch++) {
+            target[i * channels + ch] = samples[ch][i] || 0;
           }
-          return numFrames;
         }
-      };
-
-      const filter = new soundtouch.SimpleFilter(source, st);
-
-      const processed = [];
-      const bufferSize = 4096;
-      let frames;
-
-      do {
-        const temp = new Float32Array(bufferSize * 2);
-        frames = filter.extract(temp, bufferSize);
-        if (frames > 0) {
-          processed.push(temp.slice(0, frames * 2));
-        }
-      } while (frames > 0);
-
-      const totalLength = processed.reduce((sum, b) => sum + b.length, 0);
-      const outputBuffer = audioCtx.createBuffer(
-        2,
-        totalLength / 2,
-        sampleRate
-      );
-
-      const outL = outputBuffer.getChannelData(0);
-      const outR = outputBuffer.getChannelData(1);
-
-      let offset = 0;
-      for (const chunk of processed) {
-        for (let i = 0; i < chunk.length / 2; i++) {
-          outL[offset + i] = chunk[i * 2];
-          outR[offset + i] = chunk[i * 2 + 1];
-        }
-        offset += chunk.length / 2;
+        return numFrames;
       }
+    }, source);
 
-      const src = audioCtx.createBufferSource();
-      src.buffer = outputBuffer;
-      src.connect(audioCtx.destination);
-      src.start();
+    const output = [];
+    const temp = new Float32Array(4096);
+    let frames;
+    while ((frames = sourceNode.extract(temp, 2048)) > 0) {
+      output.push(...temp.slice(0, frames * channels));
+    }
 
-    };
-  </script>
+    const outBuffer = audioCtx.createBuffer(
+      channels,
+      output.length / channels,
+      buffer.sampleRate
+    );
+
+    for (let ch = 0; ch < channels; ch++) {
+      const channelData = outBuffer.getChannelData(ch);
+      for (let i = 0; i < channelData.length; i++) {
+        channelData[i] = output[i * channels + ch];
+      }
+    }
+
+    resolve(outBuffer);
+  });
+}
+
+// ----------------------------
+// AudioBuffer → WAV
+// ----------------------------
+function audioBufferToWav(buffer) {
+  const numOfChan = buffer.numberOfChannels;
+  const length = buffer.length * numOfChan * 2 + 44;
+  const bufferArray = new ArrayBuffer(length);
+  const view = new DataView(bufferArray);
+  let offset = 0;
+
+  function writeString(s) {
+    for (let i = 0; i < s.length; i++) {
+      view.setUint8(offset++, s.charCodeAt(i));
+    }
+  }
+
+  writeString('RIFF');
+  view.setUint32(offset, length - 8, true); offset += 4;
+  writeString('WAVE');
+  writeString('fmt ');
+  view.setUint32(offset, 16, true); offset += 4;
+  view.setUint16(offset, 1, true); offset += 2;
+  view.setUint16(offset, numOfChan, true); offset += 2;
+  view.setUint32(offset, buffer.sampleRate, true); offset += 4;
+  view.setUint32(offset, buffer.sampleRate * 2 * numOfChan, true); offset += 4;
+  view.setUint16(offset, numOfChan * 2, true); offset += 2;
+  view.setUint16(offset, 16, true); offset += 2;
+  writeString('data');
+  view.setUint32(offset, length - offset - 4, true); offset += 4;
+
+  for (let i = 0; i < buffer.length; i++) {
+    for (let ch = 0; ch < numOfChan; ch++) {
+      let sample = buffer.getChannelData(ch)[i];
+      sample = Math.max(-1, Math.min(1, sample));
+      view.setInt16(offset, sample * 0x7fff, true);
+      offset += 2;
+    }
+  }
+  return bufferArray;
+}
+</script>
 
 </body>
 </html>
